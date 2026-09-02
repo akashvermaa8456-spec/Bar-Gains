@@ -1,0 +1,8 @@
+# Bar-Gains & Company
+A simple, identifiable SVG mark for the public site.
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Bar-Gains &amp; Company</title>
+  <rect width="64" height="64" rx="14" fill="#0E1A2B"/>
+  <text x="32" y="42" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#F6F3EE">B</text>
+</svg>
