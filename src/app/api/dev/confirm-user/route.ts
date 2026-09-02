@@ -35,10 +35,15 @@ export async function POST(req: Request) {
 
     // Try admin API first (if available), otherwise update auth.users directly
     try {
-      // @ts-ignore - supabase-js may expose auth.admin on the server client
-      if (supabase.auth && (supabase as any).auth.admin && (supabase as any).auth.admin.updateUserById) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const res = await (supabase as any).auth.admin.updateUserById(user.id, { email_confirmed_at: confirmedAt });
+      const adminClient = supabase as unknown as {
+        auth?: {
+          admin?: {
+            updateUserById?: (id: string, values: Record<string, unknown>) => Promise<{ error?: { message?: string } } | null>;
+          };
+        };
+      };
+      if (supabase.auth && adminClient.auth?.admin && adminClient.auth.admin.updateUserById) {
+        const res = await adminClient.auth.admin.updateUserById(user.id, { email_confirmed_at: confirmedAt });
         if (res?.error) {
           console.warn("admin.updateUserById error", res.error);
         } else {
