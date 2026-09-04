@@ -1,11 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import type { Course } from "@/types/content";
-import { getCurrentUser } from "@/lib/auth";
+import { AuthAwarePrice } from "@/components/auth/AuthAwarePrice";
 
-export async function CourseCard({ course }: { course: Course }) {
-  const user = await getCurrentUser();
-  const showPrice = Boolean(user);
-
+export function CourseCard({ course }: { course: Course }) {
   return (
     <article className="flex h-full flex-col rounded-2xl border border-ink/8 bg-white p-6 shadow-card">
       <div className="flex items-start justify-between gap-3">
@@ -16,7 +15,7 @@ export async function CourseCard({ course }: { course: Course }) {
       </div>
       <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-muted">{course.shortDescription}</p>
       <p className="mt-4 text-sm text-ink">
-        {course.duration} · {showPrice ? course.price : <Link href={`/login?next=${encodeURIComponent(`/courses/${course.slug}`)}`} className="text-ink-muted hover:text-ink">Login to view price</Link>}
+        {course.duration} · <AuthAwarePrice value={course.price} redirectPath={`/courses/${course.slug}`} />
       </p>
       <Link
         href={`/courses/${course.slug}`}

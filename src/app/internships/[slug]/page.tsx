@@ -3,17 +3,14 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
-import { internships, getInternship } from "@/lib/content/internships";
+import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { getInternship } from "@/lib/content/internships";
 import { pageMetadata } from "@/lib/seo";
-import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return internships.map((item) => ({ slug: item.slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -30,9 +27,6 @@ export default async function InternshipDetailPage({ params }: Props) {
   const { slug } = await params;
   const program = getInternship(slug);
   if (!program) notFound();
-
-  const user = await getCurrentUser();
-  const showPrice = Boolean(user);
 
   return (
     <Container className="py-14">
@@ -81,9 +75,9 @@ export default async function InternshipDetailPage({ params }: Props) {
           <section className="mt-10">
             <h2 className="font-serif text-2xl">Certificate</h2>
             <p className="mt-3 text-sm leading-relaxed text-ink-muted">{program.certificate}</p>
-            {showPrice ? (
+            <AuthAwarePriceGuide>
               <p className="mt-2 text-xs text-ink-muted">Certificate options (subtle): 8 weeks — ₹299, 10 weeks — ₹399, 12 weeks — ₹599</p>
-            ) : null}
+            </AuthAwarePriceGuide>
           </section>
           <section className="mt-10">
             <h2 className="mb-4 font-serif text-2xl">FAQ</h2>
@@ -110,7 +104,9 @@ export default async function InternshipDetailPage({ params }: Props) {
             </div>
             <div>
               <dt className="text-ink-faint">Price</dt>
-              <dd className="font-medium">{showPrice ? program.price : <Link href={`/login?next=${encodeURIComponent(`/internships/${program.slug}`)}`} className="text-ink-muted hover:text-ink">Login to view price</Link>}</dd>
+              <dd className="font-medium">
+                <AuthAwarePrice value={program.price} redirectPath={`/internships/${program.slug}`} />
+              </dd>
             </div>
           </dl>
           <Button href={`/apply?program=internship:${program.slug}`} className="mt-6 w-full">

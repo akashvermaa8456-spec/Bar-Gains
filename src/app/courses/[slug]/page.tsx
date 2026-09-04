@@ -3,17 +3,14 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
-import { courses, getCourse } from "@/lib/content/courses";
+import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { getCourse } from "@/lib/content/courses";
 import { pageMetadata } from "@/lib/seo";
-import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return courses.map((item) => ({ slug: item.slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -31,9 +28,6 @@ export default async function CourseDetailPage({ params }: Props) {
   const course = getCourse(slug);
   if (!course) notFound();
 
-  const user = await getCurrentUser();
-  const showPrice = Boolean(user);
-
   return (
     <Container className="py-14">
       <p className="text-sm text-ink-faint">
@@ -47,11 +41,13 @@ export default async function CourseDetailPage({ params }: Props) {
       <div className="mt-8 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full bg-white px-3 py-1 ring-1 ring-ink/10">{course.duration}</span>
         <span className="rounded-full bg-white px-3 py-1 ring-1 ring-ink/10">{course.level}</span>
-        <span className="rounded-full bg-gold-light px-3 py-1">{showPrice ? course.price : <Link href={`/login?next=${encodeURIComponent(`/courses/${course.slug}`)}`} className="text-ink-muted hover:text-ink">Login to view price</Link>}</span>
+        <span className="rounded-full bg-gold-light px-3 py-1">
+          <AuthAwarePrice value={course.price} redirectPath={`/courses/${course.slug}`} />
+        </span>
       </div>
-      {showPrice ? (
+      <AuthAwarePriceGuide>
         <p className="mt-2 text-xs text-ink-muted">Pricing guide: 6–8 weeks — ₹499; 10+ weeks — ₹599 (certificate/fee options)</p>
-      ) : null}
+      </AuthAwarePriceGuide>
 
       <section className="mt-12">
         <h2 className="font-serif text-2xl">Curriculum &amp; modules</h2>
