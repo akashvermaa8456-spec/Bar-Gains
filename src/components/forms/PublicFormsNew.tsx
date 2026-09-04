@@ -6,7 +6,7 @@ import { FormInput, FormSelect, FormTextarea } from "@/components/forms/FormFiel
 import { PersistenceNotice } from "@/components/forms/PersistenceNotice";
 import { programOptions } from "@/lib/seo";
 import { courses } from "@/lib/content/courses";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -444,6 +444,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams?.get("next") ?? null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -481,27 +483,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
             await supabase.from("profiles").upsert([{ id: user.id, full_name: name, email }]);
           }
 
-          if (process.env.NEXT_PUBLIC_ADMIN_API_KEY) {
-            try {
-              await fetch("/api/dev/confirm-user", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY,
-                },
-                body: JSON.stringify({ email }),
-              });
-
-              const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-              if (!signInErr) {
-                router.push("/dashboard");
-                return;
-              }
-            } catch {
-              console.warn("Auto-confirm/register flow failed");
-            }
-          }
-
           setMessage("Check your email for confirmation (if required). You can now log in.");
           router.push("/login");
         }
@@ -511,33 +492,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
           const errMsg = (error.message || "").toString();
           const looksLikeUnconfirmed = /confirm|confirmed|verify|verification|required.*confirmation|not verified|email.*confirm/i.test(errMsg);
 
-          if (looksLikeUnconfirmed && process.env.NEXT_PUBLIC_ADMIN_API_KEY) {
-            try {
-              const resp = await fetch("/api/dev/confirm-user", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY,
-                },
-                body: JSON.stringify({ email }),
-              });
-              const body = await resp.json().catch(() => ({ ok: false }));
-              if (resp.ok && (body.ok || body.success)) {
-                const { error: retryErr } = await supabase.auth.signInWithPassword({ email, password });
-                if (!retryErr) {
-                  router.push("/dashboard");
-                  return;
-                }
-              }
-            } catch {
-              console.warn("Auto-confirm attempt failed");
-            }
+          if (looksLikeUnconfirmed) {
+            setMessage("Please verify your email before logging in, or use the reset flow if needed.");
+          } else {
+            setMessage(error.message || "Login failed.");
           }
-
-          setMessage(error.message || "Login failed.");
         } else {
-          setMessage("Logged in — redirecting to dashboard.");
-          router.push("/dashboard");
+          setMessage("Logged in — redirecting…");
+          const dest = nextParam ? decodeURIComponent(nextParam) : "/dashboard";
+          router.push(dest);
           if (signInData?.user) {
             console.info("Signed in user", signInData.user.email);
           }
@@ -572,3 +535,4 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
     </form>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
 import { Container } from "@/components/ui/Container";
@@ -17,8 +17,6 @@ export default function ProgramsAdminPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Program | null>(null);
   const [form, setForm] = useState({ title: "", slug: "", short_description: "" });
-
-  const adminKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? "";
 
   useEffect(() => {
     let mounted = true;
@@ -53,7 +51,7 @@ export default function ProgramsAdminPage() {
     try {
       const res = await fetch(editing ? `/api/admin/internships/${editing.id}` : "/api/admin/internships", {
         method: editing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -73,7 +71,7 @@ export default function ProgramsAdminPage() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this program?")) return;
     try {
-      const res = await fetch(`/api/admin/internships/${id}`, { method: "DELETE", headers: { "x-admin-key": adminKey } });
+      const res = await fetch(`/api/admin/internships/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (json.ok) setPrograms((p) => p.filter((x) => x.id !== id));
       else alert(json.error || "Error");
@@ -82,7 +80,7 @@ export default function ProgramsAdminPage() {
     }
   }
 
-  if (loading) return <Container className="py-20">Loading…</Container>;
+  if (loading) return <Container className="py-20">Loadingâ€¦</Container>;
 
   return (
     <Container className="py-14">
@@ -139,3 +137,4 @@ export default function ProgramsAdminPage() {
     </Container>
   );
 }
+

@@ -1,6 +1,8 @@
 import { StudentApplicationForm } from "@/components/forms/PublicFormsNew";
 import { Container } from "@/components/ui/Container";
 import { pageMetadata } from "@/lib/seo";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata = pageMetadata({
   title: "Apply",
@@ -14,6 +16,13 @@ export default async function ApplyPage({
   searchParams: Promise<{ program?: string }>;
 }) {
   const { program } = await searchParams;
+
+  // Require authentication to access the apply form
+  const user = await getCurrentUser();
+  if (!user) {
+    const target = encodeURIComponent(`/apply${program ? `?program=${program}` : ""}`);
+    redirect(`/login?next=${target}`);
+  }
 
   return (
     <Container className="max-w-xl py-14">

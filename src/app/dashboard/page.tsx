@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
 import { Container } from "@/components/ui/Container";
-import { Button } from "@/components/ui/Button";
 import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 
@@ -77,11 +76,6 @@ export default function DashboardPage() {
     };
   }, [router]);
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/");
-  }
-
   if (loading) return <Container className="py-20">Loading…</Container>;
   if (!user) return null;
 
@@ -91,9 +85,6 @@ export default function DashboardPage() {
         <div>
           <h1 className="font-serif text-3xl">Welcome, {profile?.full_name ?? user.email}</h1>
           <p className="mt-2 text-sm text-ink-muted">Student dashboard — applications, enrollments, and profile.</p>
-        </div>
-        <div>
-          <Button variant="ghost" onClick={handleLogout}>Logout</Button>
         </div>
       </div>
 
