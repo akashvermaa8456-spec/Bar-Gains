@@ -515,6 +515,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
           setMessage("Logged in — redirecting…");
           const dest = nextParam ? decodeURIComponent(nextParam) : "/dashboard";
           router.push(dest);
+          router.refresh();
           if (signInData?.user) {
             console.info("Signed in user", signInData.user.email);
           }

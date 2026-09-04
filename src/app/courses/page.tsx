@@ -3,6 +3,8 @@ import { CourseCard } from "@/components/cards/CourseCard";
 import { Container } from "@/components/ui/Container";
 import { pageMetadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = pageMetadata({
   title: "Courses",
   description: "Structured technology courses from Bar-Gains & Company. Durations, levels, and placeholder pricing.",

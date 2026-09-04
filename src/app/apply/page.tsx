@@ -4,6 +4,8 @@ import { pageMetadata } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = pageMetadata({
   title: "Apply",
   description: "Apply to a Bar-Gains & Company internship or course.",

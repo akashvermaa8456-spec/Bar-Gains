@@ -7,6 +7,8 @@ import { internships, getInternship } from "@/lib/content/internships";
 import { pageMetadata } from "@/lib/seo";
 import { getCurrentUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
