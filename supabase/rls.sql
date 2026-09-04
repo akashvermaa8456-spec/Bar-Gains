@@ -10,6 +10,9 @@ $$;
 -- Enable RLS on sensitive tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.student_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.internship_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_inquiries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.course_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.business_leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_enquiries ENABLE ROW LEVEL SECURITY;
 
@@ -37,6 +40,21 @@ CREATE POLICY "Anyone can insert application (authenticated)" ON public.student_
 CREATE POLICY "Owner or admin select applications" ON public.student_applications FOR SELECT USING (profile_id = auth.uid()::uuid OR public.is_admin());
 CREATE POLICY "Owner or admin update applications" ON public.student_applications FOR UPDATE USING (profile_id = auth.uid()::uuid OR public.is_admin()) WITH CHECK (profile_id = auth.uid()::uuid OR public.is_admin());
 CREATE POLICY "Admin delete applications" ON public.student_applications FOR DELETE USING (public.is_admin());
+
+CREATE POLICY "Users can insert internship applications" ON public.internship_applications FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND (profile_id IS NULL OR profile_id = auth.uid()::uuid) OR public.is_admin());
+CREATE POLICY "Users can select their internship applications" ON public.internship_applications FOR SELECT USING (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Users can update their internship applications" ON public.internship_applications FOR UPDATE USING (profile_id = auth.uid()::uuid OR public.is_admin()) WITH CHECK (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Admin can manage internship applications" ON public.internship_applications FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Users can insert project inquiries" ON public.project_inquiries FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND (profile_id IS NULL OR profile_id = auth.uid()::uuid) OR public.is_admin());
+CREATE POLICY "Users can select their project inquiries" ON public.project_inquiries FOR SELECT USING (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Users can update their project inquiries" ON public.project_inquiries FOR UPDATE USING (profile_id = auth.uid()::uuid OR public.is_admin()) WITH CHECK (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Admin can manage project inquiries" ON public.project_inquiries FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+CREATE POLICY "Users can insert course enrollments" ON public.course_enrollments FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND (profile_id IS NULL OR profile_id = auth.uid()::uuid) OR public.is_admin());
+CREATE POLICY "Users can select their course enrollments" ON public.course_enrollments FOR SELECT USING (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Users can update their course enrollments" ON public.course_enrollments FOR UPDATE USING (profile_id = auth.uid()::uuid OR public.is_admin()) WITH CHECK (profile_id = auth.uid()::uuid OR public.is_admin());
+CREATE POLICY "Admin can manage course enrollments" ON public.course_enrollments FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- Business leads & contact enquiries: allow public inserts (forms) but only admins can read/manage
 CREATE POLICY "Public can insert business leads" ON public.business_leads FOR INSERT USING (true) WITH CHECK (true);

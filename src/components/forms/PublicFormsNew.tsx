@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { FormInput, FormSelect, FormTextarea } from "@/components/forms/FormFields";
 import { PersistenceNotice } from "@/components/forms/PersistenceNotice";
+import { SuccessPopup } from "@/components/ui/SuccessPopup";
 import { programOptions } from "@/lib/seo";
 import { courses } from "@/lib/content/courses";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -248,8 +249,9 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+const [successOpen, setSuccessOpen] = useState(false);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const next: Errors = {};
@@ -277,22 +279,26 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
 
     setLoading(true);
     try {
-      // If program indicates a course, send to course enrollments endpoint
+      const { data: authData } = await supabase.auth.getUser();
+      const profileId = authData?.user?.id ?? null;
       const m = program.match(/^([a-z]+):(.+)$/i);
       let res;
       if (m && m[1].toLowerCase() === "course") {
         const courseSlug = m[2];
-        res = await postJson("/api/course-enrollments", { full_name, email, phone, college, degree, branch, year, course: courseSlug, message: msg });
+        res = await postJson("/api/course-enrollments", { full_name, email, phone, college, degree, branch, year, course: courseSlug, message: msg, profile_id: profileId });
       } else if (m && m[1].toLowerCase() === "project") {
         const projectSlug = m[2];
-        res = await postJson("/api/project-inquiries", { full_name, email, phone, college, degree, branch, year, project: projectSlug, message: msg });
+        res = await postJson("/api/project-inquiries", { full_name, email, phone, college, degree, branch, year, project: projectSlug, message: msg, profile_id: profileId });
+      } else if (m && m[1].toLowerCase() === "internship") {
+        const internshipSlug = m[2];
+        res = await postJson("/api/internship-applications", { full_name, email, phone, college, degree, branch, year, internship: internshipSlug, message: msg, profile_id: profileId });
       } else {
-        // default: internship / general application
-        res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg });
+        res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg, profile_id: profileId });
       }
 
       if (res && res.ok) {
         setMessage("Thanks — your application was submitted.");
+        setSuccessOpen(true);
         (event.target as HTMLFormElement).reset();
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
@@ -306,39 +312,47 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <PersistenceNotice />
-      <FormInput id="s-name" name="full_name" label="Full Name" required error={errors.full_name} />
-      <FormInput id="s-email" name="email" type="email" label="Email" required error={errors.email} />
-      <FormInput id="s-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
-      <FormInput id="s-college" name="college" label="College" required error={errors.college} />
-      <FormInput id="s-degree" name="degree" label="Degree" required error={errors.degree} />
-      <FormInput id="s-branch" name="branch" label="Branch" required error={errors.branch} />
-      <FormSelect id="s-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
-        <option value="" disabled>
-          Select
-        </option>
-        <option>1st year</option>
-        <option>2nd year</option>
-        <option>3rd year</option>
-        <option>4th year</option>
-        <option>Postgraduate</option>
-        <option>Other</option>
-      </FormSelect>
-      <FormSelect id="s-program" name="program" label="Program" required defaultValue={defaultProgram ?? ""} error={errors.program}>
-        <option value="" disabled>
-          Select
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+    <>
+      <SuccessPopup
+        open={successOpen}
+        title="Application submitted"
+        description="Thanks — your request was recorded successfully. We will get back to you soon with the next steps."
+        onClose={() => setSuccessOpen(false)}
+      />
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <PersistenceNotice />
+        <FormInput id="s-name" name="full_name" label="Full Name" required error={errors.full_name} />
+        <FormInput id="s-email" name="email" type="email" label="Email" required error={errors.email} />
+        <FormInput id="s-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
+        <FormInput id="s-college" name="college" label="College" required error={errors.college} />
+        <FormInput id="s-degree" name="degree" label="Degree" required error={errors.degree} />
+        <FormInput id="s-branch" name="branch" label="Branch" required error={errors.branch} />
+        <FormSelect id="s-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
+          <option value="" disabled>
+            Select
           </option>
-        ))}
-      </FormSelect>
-      <FormTextarea id="s-message" name="message" label="Message" />
-      {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
-      <Button type="submit" disabled={loading}>{loading ? "Sending…" : "Apply Now"}</Button>
-    </form>
+          <option>1st year</option>
+          <option>2nd year</option>
+          <option>3rd year</option>
+          <option>4th year</option>
+          <option>Postgraduate</option>
+          <option>Other</option>
+        </FormSelect>
+        <FormSelect id="s-program" name="program" label="Program" required defaultValue={defaultProgram ?? ""} error={errors.program}>
+          <option value="" disabled>
+            Select
+          </option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </FormSelect>
+        <FormTextarea id="s-message" name="message" label="Message" />
+        {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
+        <Button type="submit" disabled={loading}>{loading ? "Sending…" : "Apply Now"}</Button>
+      </form>
+    </>
   );
 }
 
@@ -346,6 +360,7 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const router = useRouter();
   const options = useMemo(
     () =>
@@ -402,6 +417,7 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
 
       if (res.ok) {
         setMessage("Thanks — you are enrolled! Check your email for confirmation.");
+        setSuccessOpen(true);
         (event.target as HTMLFormElement).reset();
         if (profileId) {
           setTimeout(() => router.push("/dashboard"), 2000);
@@ -417,39 +433,47 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <PersistenceNotice />
-      <FormInput id="c-name" name="full_name" label="Full Name" required error={errors.full_name} />
-      <FormInput id="c-email" name="email" type="email" label="Email" required error={errors.email} />
-      <FormInput id="c-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
-      <FormInput id="c-college" name="college" label="College" required error={errors.college} />
-      <FormInput id="c-degree" name="degree" label="Degree" required error={errors.degree} />
-      <FormInput id="c-branch" name="branch" label="Branch" required error={errors.branch} />
-      <FormSelect id="c-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
-        <option value="" disabled>
-          Select
-        </option>
-        <option>1st year</option>
-        <option>2nd year</option>
-        <option>3rd year</option>
-        <option>4th year</option>
-        <option>Postgraduate</option>
-        <option>Other</option>
-      </FormSelect>
-      <FormSelect id="c-course" name="course" label="Course" required defaultValue={defaultCourse ?? ""} error={errors.course}>
-        <option value="" disabled>
-          Select
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+    <>
+      <SuccessPopup
+        open={successOpen}
+        title="Enrollment submitted"
+        description="Thanks — your course request was recorded successfully. We will get back to you soon with the details."
+        onClose={() => setSuccessOpen(false)}
+      />
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <PersistenceNotice />
+        <FormInput id="c-name" name="full_name" label="Full Name" required error={errors.full_name} />
+        <FormInput id="c-email" name="email" type="email" label="Email" required error={errors.email} />
+        <FormInput id="c-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
+        <FormInput id="c-college" name="college" label="College" required error={errors.college} />
+        <FormInput id="c-degree" name="degree" label="Degree" required error={errors.degree} />
+        <FormInput id="c-branch" name="branch" label="Branch" required error={errors.branch} />
+        <FormSelect id="c-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
+          <option value="" disabled>
+            Select
           </option>
-        ))}
-      </FormSelect>
-      <FormTextarea id="c-message" name="message" label="Message (optional)" />
-      {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
-      <Button type="submit" disabled={loading}>{loading ? "Enrolling…" : "Enroll Now"}</Button>
-    </form>
+          <option>1st year</option>
+          <option>2nd year</option>
+          <option>3rd year</option>
+          <option>4th year</option>
+          <option>Postgraduate</option>
+          <option>Other</option>
+        </FormSelect>
+        <FormSelect id="c-course" name="course" label="Course" required defaultValue={defaultCourse ?? ""} error={errors.course}>
+          <option value="" disabled>
+            Select
+          </option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </FormSelect>
+        <FormTextarea id="c-message" name="message" label="Message (optional)" />
+        {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
+        <Button type="submit" disabled={loading}>{loading ? "Enrolling…" : "Enroll Now"}</Button>
+      </form>
+    </>
   );
 }
 

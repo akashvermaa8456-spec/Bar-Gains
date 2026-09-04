@@ -28,6 +28,13 @@ export default async function InternshipDetailPage({ params }: Props) {
   const program = getInternship(slug);
   if (!program) notFound();
 
+  const certificateLabel = (() => {
+    if (/8 weeks/i.test(program.duration)) return "Certificate option: 8 weeks — ₹299";
+    if (/10 weeks/i.test(program.duration)) return "Certificate option: 10 weeks — ₹399";
+    if (/12 weeks/i.test(program.duration)) return "Certificate option: 12 weeks — ₹599";
+    return "Certificate options are available after successful completion and interview clearance.";
+  })();
+
   return (
     <Container className="py-14">
       <p className="text-sm text-ink-faint">
@@ -76,7 +83,7 @@ export default async function InternshipDetailPage({ params }: Props) {
             <h2 className="font-serif text-2xl">Certificate</h2>
             <p className="mt-3 text-sm leading-relaxed text-ink-muted">{program.certificate}</p>
             <AuthAwarePriceGuide>
-              <p className="mt-2 text-xs text-ink-muted">Certificate options (subtle): 8 weeks — ₹299, 10 weeks — ₹399, 12 weeks — ₹599</p>
+              <p className="mt-2 text-xs text-ink-muted">{certificateLabel}</p>
             </AuthAwarePriceGuide>
           </section>
           <section className="mt-10">

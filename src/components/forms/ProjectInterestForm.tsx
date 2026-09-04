@@ -1,11 +1,16 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
+import { SuccessPopup } from "@/components/ui/SuccessPopup";
+import supabase from "@/lib/supabaseClient";
 
 export default function ProjectInterestForm({ projectSlug }: { projectSlug: string }) {
+  const [successOpen, setSuccessOpen] = useState(false);
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget as HTMLFormElement);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const payload = {
       full_name: String(fd.get("name") ?? ""),
       email: String(fd.get("email") ?? ""),
@@ -16,10 +21,15 @@ export default function ProjectInterestForm({ projectSlug }: { projectSlug: stri
     };
 
     try {
-      const resp = await fetch("/api/project-inquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const { data: authData } = await supabase.auth.getUser();
+      const resp = await fetch("/api/project-inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, profile_id: authData?.user?.id ?? null }),
+      });
       if (resp.ok) {
-        alert("Thanks — your interest was recorded. We will contact you.");
-        (e.currentTarget as HTMLFormElement).reset();
+        setSuccessOpen(true);
+        form.reset();
       } else {
         alert("Sorry — failed to record interest. Try again later.");
       }
@@ -30,30 +40,38 @@ export default function ProjectInterestForm({ projectSlug }: { projectSlug: stri
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 max-w-md space-y-3">
-      <label className="block">
-        <div className="text-sm text-ink-muted">Name</div>
-        <input name="name" className="mt-1 w-full rounded border px-3 py-2" required />
-      </label>
-      <label className="block">
-        <div className="text-sm text-ink-muted">Email</div>
-        <input name="email" type="email" className="mt-1 w-full rounded border px-3 py-2" required />
-      </label>
-      <label className="block">
-        <div className="text-sm text-ink-muted">Phone</div>
-        <input name="phone" className="mt-1 w-full rounded border px-3 py-2" />
-      </label>
-      <label className="block">
-        <div className="text-sm text-ink-muted">College / Organisation (optional)</div>
-        <input name="college" className="mt-1 w-full rounded border px-3 py-2" />
-      </label>
-      <label className="block">
-        <div className="text-sm text-ink-muted">Message (optional)</div>
-        <textarea name="message" className="mt-1 w-full rounded border px-3 py-2" />
-      </label>
-      <div>
-        <button type="submit" className="rounded bg-teal px-4 py-2 text-white">Express interest</button>
-      </div>
-    </form>
+    <>
+      <SuccessPopup
+        open={successOpen}
+        title="Interest submitted"
+        description="Thanks — your interest was recorded successfully. We will get back to you soon with the next steps."
+        onClose={() => setSuccessOpen(false)}
+      />
+      <form onSubmit={onSubmit} className="mt-4 max-w-md space-y-3">
+        <label className="block">
+          <div className="text-sm text-ink-muted">Name</div>
+          <input name="name" className="mt-1 w-full rounded border px-3 py-2" required />
+        </label>
+        <label className="block">
+          <div className="text-sm text-ink-muted">Email</div>
+          <input name="email" type="email" className="mt-1 w-full rounded border px-3 py-2" required />
+        </label>
+        <label className="block">
+          <div className="text-sm text-ink-muted">Phone</div>
+          <input name="phone" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block">
+          <div className="text-sm text-ink-muted">College / Organisation (optional)</div>
+          <input name="college" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block">
+          <div className="text-sm text-ink-muted">Message (optional)</div>
+          <textarea name="message" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <div>
+          <button type="submit" className="rounded bg-teal px-4 py-2 text-white">Express interest</button>
+        </div>
+      </form>
+    </>
   );
 }

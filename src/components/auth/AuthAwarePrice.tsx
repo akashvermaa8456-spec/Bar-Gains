@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/AuthContext";
 export function AuthAwarePrice({
   value,
   redirectPath,
-  fallbackText = "Login to view price",
+  fallbackText = "Login to view prices",
 }: {
   value: string;
   redirectPath: string;

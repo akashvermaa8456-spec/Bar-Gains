@@ -4,16 +4,17 @@ import supabase from "@/lib/supabaseServer";
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const { full_name, email, phone, college, degree, branch, year, project, message } = body;
+    const { full_name, email, phone, college, degree, branch, year, project, message, profile_id } = body;
     if (!full_name || !email || !project) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Try inserting into project_inquiries; if table doesn't exist, fall back to student_applications
     try {
       const { error } = await supabase.from("project_inquiries").insert([
         {
-          project_slug: project,
+          profile_id: profile_id ? String(profile_id) : null,
+          project_slug: String(project),
+          project_title: String(project),
           full_name: String(full_name),
           email: String(email),
           phone: phone ? String(phone) : null,
@@ -27,25 +28,8 @@ export async function POST(req: Request) {
       ]);
 
       if (error) {
-        console.warn("project_inquiries insert failed, falling back:", error.message);
-        // Fallback
-        const { error: fallbackErr } = await supabase.from("student_applications").insert([
-          {
-            full_name: String(full_name),
-            email: String(email),
-            phone: phone ? String(phone) : null,
-            college: college ? String(college) : null,
-            degree: degree ? String(degree) : null,
-            branch: branch ? String(branch) : null,
-            year: year ? String(year) : null,
-            message: message ? `Project interest: ${project} -- ${String(message)}` : `Project interest: ${project}`,
-            status: "NEW",
-          },
-        ]);
-        if (fallbackErr) {
-          console.error("Fallback insert failed:", fallbackErr);
-          return NextResponse.json({ error: "Database error" }, { status: 500 });
-        }
+        console.error("Project inquiry insert failed:", error);
+        return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
 
       return NextResponse.json({ ok: true }, { status: 201 });

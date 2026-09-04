@@ -4,7 +4,7 @@ import supabase from "@/lib/supabaseServer";
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const { full_name, email, phone, college, degree, branch, year, program, message } = body;
+    const { full_name, email, phone, college, degree, branch, year, program, message, profile_id } = body;
     if (!full_name || !email || !college || !degree || !branch || !year || !program) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     }
 
     const insertObj: Record<string, string | null> = {
+      profile_id: profile_id ? String(profile_id) : null,
       full_name: String(full_name),
       email: String(email),
       phone: phone ? String(phone) : null,
