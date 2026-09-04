@@ -18,8 +18,7 @@ export default function ForCollegesPage() {
         Industry Exposure for the Next Generation
       </h1>
       <p className="mt-4 max-w-2xl text-lg text-ink-muted">
-        We can work with colleges to design practical technology exposure. Partnerships are discussed individually —
-        we do not list unnamed institutions or claim exclusive university status.
+        We work with colleges to train students through hands-on internships, workshops and project guidance. Hire our professional trainers — many have experience at product companies such as Paytm, Sopra Steria, Microsoft, Accenture, TCS, Google and other top MNCs. Partnerships are discussed individually and tailored to your curriculum.
       </p>
       <ul className="mt-10 grid gap-3 sm:grid-cols-2">
         {collegeOfferings.map((item) => (

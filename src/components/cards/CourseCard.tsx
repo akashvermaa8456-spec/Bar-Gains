@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { Course } from "@/types/content";
+import { getCurrentUser } from "@/lib/auth";
 
-export function CourseCard({ course }: { course: Course }) {
+export async function CourseCard({ course }: { course: Course }) {
+  const user = await getCurrentUser();
+  const showPrice = Boolean(user);
+
   return (
     <article className="flex h-full flex-col rounded-2xl border border-ink/8 bg-white p-6 shadow-card">
       <div className="flex items-start justify-between gap-3">
@@ -12,7 +16,7 @@ export function CourseCard({ course }: { course: Course }) {
       </div>
       <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-muted">{course.shortDescription}</p>
       <p className="mt-4 text-sm text-ink">
-        {course.duration} · {course.price}
+        {course.duration} · {showPrice ? course.price : <Link href={`/login?next=${encodeURIComponent(`/courses/${course.slug}`)}`} className="text-ink-muted hover:text-ink">Login to view price</Link>}
       </p>
       <Link
         href={`/courses/${course.slug}`}

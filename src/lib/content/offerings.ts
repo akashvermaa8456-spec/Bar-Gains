@@ -35,24 +35,27 @@ export const businessServices = [
 export const pricingTiers = [
   {
     name: "Starter Website",
-    price: "₹XX,XXX",
-    note: "Placeholder price. Final quote after a short discovery call.",
+    description:
+      "A clean, modern website for a new or small business that needs a professional online presence and clear contact flow.",
+    note: "We will discuss scope, timeline, and budget after a short conversation.",
     points: ["Multi-page marketing site", "Responsive layout", "Contact form", "Basic SEO metadata"],
     cta: "Start Your Project",
     featured: false,
   },
   {
     name: "Business Website",
-    price: "₹XX,XXX",
-    note: "Placeholder price. Not a published rate card.",
+    description:
+      "A more complete digital presence for growing businesses that need stronger branding, service sections, and lead generation.",
+    note: "Tell us what you need and we will recommend the right approach before quoting.",
     points: ["Richer content structure", "Service or product sections", "Lead form", "Handover notes"],
     cta: "Start Your Project",
     featured: true,
   },
   {
     name: "Custom Solution",
-    price: "Contact Us",
-    note: "Scoped after requirements. No public list price.",
+    description:
+      "Tailored digital work for custom workflows, business tools, or integrations that need a more flexible setup.",
+    note: "Best for projects that need a deeper discovery process before we scope the build.",
     points: ["Web application work", "Integrations as needed", "Staged delivery", "Written proposal"],
     cta: "Start Your Project",
     featured: false,

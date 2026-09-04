@@ -277,14 +277,28 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
 
     setLoading(true);
     try {
-      const res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg });
-      if (res.ok) {
+      // If program indicates a course, send to course enrollments endpoint
+      const m = program.match(/^([a-z]+):(.+)$/i);
+      let res;
+      if (m && m[1].toLowerCase() === "course") {
+        const courseSlug = m[2];
+        res = await postJson("/api/course-enrollments", { full_name, email, phone, college, degree, branch, year, course: courseSlug, message: msg });
+      } else if (m && m[1].toLowerCase() === "project") {
+        const projectSlug = m[2];
+        res = await postJson("/api/project-inquiries", { full_name, email, phone, college, degree, branch, year, project: projectSlug, message: msg });
+      } else {
+        // default: internship / general application
+        res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg });
+      }
+
+      if (res && res.ok) {
         setMessage("Thanks — your application was submitted.");
         (event.target as HTMLFormElement).reset();
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
-    } catch {
+    } catch (e) {
+      console.error(e);
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);

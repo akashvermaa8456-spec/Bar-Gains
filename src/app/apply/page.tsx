@@ -27,9 +27,7 @@ export default async function ApplyPage({
   return (
     <Container className="max-w-xl py-14">
       <h1 className="font-serif text-4xl text-ink">Apply Now</h1>
-      <p className="mt-3 text-ink-muted">
-        One form for internships and courses. Saving applications to the database is not enabled yet.
-      </p>
+      <p className="mt-3 text-ink-muted">One form for internships and courses. Complete the form to apply — we will follow up by email.</p>
       <div className="mt-8">
         <StudentApplicationForm defaultProgram={program} />
       </div>
