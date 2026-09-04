@@ -249,9 +249,10 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-const [successOpen, setSuccessOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const router = useRouter();
 
-async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const next: Errors = {};
@@ -297,9 +298,21 @@ async function onSubmit(event: FormEvent<HTMLFormElement>) {
       }
 
       if (res && res.ok) {
+        const targetKey = (() => {
+          if (m && m[1].toLowerCase() === "course") return `applied:course:${m[2]}`;
+          if (m && m[1].toLowerCase() === "project") return `applied:project:${m[2]}`;
+          if (m && m[1].toLowerCase() === "internship") return `applied:internship:${m[2]}`;
+          return `applied:program:${program}`;
+        })();
+
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(targetKey, "1");
+        }
+
         setMessage("Thanks — your application was submitted.");
         setSuccessOpen(true);
         (event.target as HTMLFormElement).reset();
+        setTimeout(() => router.push("/dashboard"), 1500);
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }

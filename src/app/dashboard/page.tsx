@@ -47,26 +47,59 @@ export default function DashboardPage() {
 
       if (mounted) setUser(current);
 
+      await supabase.from("profiles").upsert(
+        {
+          id: current.id,
+          email: current.email,
+          full_name: current.user_metadata?.full_name ?? current.email,
+          role: "STUDENT",
+        },
+        { onConflict: "id" },
+      );
+
       const { data: profileData } = await supabase.from("profiles").select("*").eq("id", current.id).maybeSingle();
       if (mounted) setProfile((profileData as Profile) ?? null);
 
       const [courseRes, internshipRes, projectRes] = await Promise.all([
-        supabase.from("course_enrollments").select("*, course:course_id(id, title, slug)").eq("profile_id", current.id),
-        supabase.from("internship_applications").select("*, internship:internship_id(id, title, slug)").eq("profile_id", current.id),
-        supabase.from("project_inquiries").select("*").eq("profile_id", current.id),
+        supabase.from("course_enrollments").select("*, course:course_id(id, title, slug)").or(`profile_id.eq.${current.id},email.eq.${current.email}`),
+        supabase.from("internship_applications").select("*, internship:internship_id(id, title, slug)").or(`profile_id.eq.${current.id},email.eq.${current.email}`),
+        supabase.from("project_inquiries").select("*").or(`profile_id.eq.${current.id},email.eq.${current.email}`),
       ]);
 
+      type CourseRow = {
+        id: string;
+        status?: string;
+        created_at: string;
+        course?: { title?: string; slug?: string } | null;
+      };
+
+      type InternshipRow = {
+        id: string;
+        status?: string;
+        created_at: string;
+        internship?: { title?: string; slug?: string } | null;
+        title?: string;
+      };
+
+      type ProjectRow = {
+        id: string;
+        status?: string;
+        created_at: string;
+        project_title?: string | null;
+        project_slug?: string | null;
+      };
+
       const combined: DashboardItem[] = [
-        ...(courseRes.data ?? []).map((row: any) => ({
+        ...(courseRes.data ?? []).map((row: CourseRow) => ({
           id: row.id,
           type: "course" as const,
-          title: row.course?.title ?? row.course_title ?? "Course",
+          title: row.course?.title ?? "Course",
           slug: row.course?.slug,
           href: row.course?.slug ? `/courses/${row.course.slug}` : "/courses",
           status: row.status ?? "ENROLLED",
           created_at: row.created_at,
         })),
-        ...(internshipRes.data ?? []).map((row: any) => ({
+        ...(internshipRes.data ?? []).map((row: InternshipRow) => ({
           id: row.id,
           type: "internship" as const,
           title: row.internship?.title ?? row.title ?? "Internship",
@@ -75,11 +108,11 @@ export default function DashboardPage() {
           status: row.status ?? "NEW",
           created_at: row.created_at,
         })),
-        ...(projectRes.data ?? []).map((row: any) => ({
+        ...(projectRes.data ?? []).map((row: ProjectRow) => ({
           id: row.id,
           type: "project" as const,
           title: row.project_title ?? row.project_slug ?? "Project",
-          slug: row.project_slug,
+          slug: row.project_slug ?? undefined,
           href: row.project_slug ? `/projects/${row.project_slug}` : "/projects",
           status: row.status ?? "INTERESTED",
           created_at: row.created_at,

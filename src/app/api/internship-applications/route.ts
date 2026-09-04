@@ -4,13 +4,39 @@ import supabase from "@/lib/supabaseServer";
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
-    const { full_name, email, phone, college, degree, branch, year, internship, message, profile_id } = body;
+    const { full_name, email, phone, college, degree, branch, year, internship, internship_slug, message, profile_id } = body;
 
-    if (!full_name || !email || !internship) {
+    const internshipSlug = String(internship ?? internship_slug ?? "").trim();
+    const emailValue = String(email ?? "").trim();
+    const profileId = profile_id ? String(profile_id) : null;
+
+    if (!full_name || !emailValue || !internshipSlug) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const internshipSlug = String(internship);
+    let resolvedProfileId: string | null = profileId;
+    if (!resolvedProfileId) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", emailValue)
+        .maybeSingle();
+      resolvedProfileId = profileData?.id ?? null;
+    }
+
+    if (profileId && !resolvedProfileId) {
+      await supabase.from("profiles").upsert(
+        {
+          id: profileId,
+          email: emailValue,
+          full_name: String(full_name),
+          role: "STUDENT",
+        },
+        { onConflict: "id" },
+      );
+      resolvedProfileId = profileId;
+    }
+
     const { data: internshipRow, error: lookupError } = await supabase
       .from("internships")
       .select("id")
@@ -24,10 +50,10 @@ export async function POST(req: Request) {
 
     const { error } = await supabase.from("internship_applications").insert([
       {
-        profile_id: profile_id ? String(profile_id) : null,
+        profile_id: resolvedProfileId,
         internship_id: internshipRow?.id ?? null,
         full_name: String(full_name),
-        email: String(email),
+        email: emailValue,
         phone: phone ? String(phone) : null,
         college: college ? String(college) : null,
         degree: degree ? String(degree) : null,

@@ -1,11 +1,19 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SuccessPopup } from "@/components/ui/SuccessPopup";
 import supabase from "@/lib/supabaseClient";
 
-export default function ProjectInterestForm({ projectSlug }: { projectSlug: string }) {
+export default function ProjectInterestForm({
+  projectSlug,
+  disabled = false,
+}: {
+  projectSlug: string;
+  disabled?: boolean;
+}) {
   const [successOpen, setSuccessOpen] = useState(false);
+  const router = useRouter();
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,8 +36,12 @@ export default function ProjectInterestForm({ projectSlug }: { projectSlug: stri
         body: JSON.stringify({ ...payload, profile_id: authData?.user?.id ?? null }),
       });
       if (resp.ok) {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`applied:project:${projectSlug}`, "1");
+        }
         setSuccessOpen(true);
         form.reset();
+        setTimeout(() => router.push("/dashboard"), 1500);
       } else {
         alert("Sorry — failed to record interest. Try again later.");
       }
@@ -69,7 +81,9 @@ export default function ProjectInterestForm({ projectSlug }: { projectSlug: stri
           <textarea name="message" className="mt-1 w-full rounded border px-3 py-2" />
         </label>
         <div>
-          <button type="submit" className="rounded bg-teal px-4 py-2 text-white">Express interest</button>
+          <button type="submit" className="rounded bg-teal px-4 py-2 text-white disabled:cursor-not-allowed disabled:bg-ink/20" disabled={disabled}>
+            {disabled ? "Already expressed interest" : "Express interest"}
+          </button>
         </div>
       </form>
     </>

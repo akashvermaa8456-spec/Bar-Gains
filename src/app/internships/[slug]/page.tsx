@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
 import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { createServerSupabaseClient } from "@/lib/auth";
 import { getInternship } from "@/lib/content/internships";
 import { pageMetadata } from "@/lib/seo";
 
@@ -27,6 +28,24 @@ export default async function InternshipDetailPage({ params }: Props) {
   const { slug } = await params;
   const program = getInternship(slug);
   if (!program) notFound();
+
+  const supabase = await createServerSupabaseClient();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData?.user;
+
+  let alreadyApplied = false;
+  if (user) {
+    const { data: internshipRow } = await supabase.from("internships").select("id").eq("slug", program.slug).maybeSingle();
+    if (internshipRow) {
+      const { data: existing } = await supabase
+        .from("internship_applications")
+        .select("id")
+        .or(`profile_id.eq.${user.id},email.eq.${user.email}`)
+        .eq("internship_id", internshipRow.id)
+        .limit(1);
+      alreadyApplied = Boolean(existing && existing.length > 0);
+    }
+  }
 
   const certificateLabel = (() => {
     if (/8 weeks/i.test(program.duration)) return "Certificate option: 8 weeks — ₹299";
@@ -116,8 +135,8 @@ export default async function InternshipDetailPage({ params }: Props) {
               </dd>
             </div>
           </dl>
-          <Button href={`/apply?program=internship:${program.slug}`} className="mt-6 w-full">
-            Apply Now
+          <Button href={`/apply?program=internship:${program.slug}`} className="mt-6 w-full" disabled={alreadyApplied}>
+            {alreadyApplied ? "Applied" : "Apply Now"}
           </Button>
         </aside>
       </div>

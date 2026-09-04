@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
 import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { createServerSupabaseClient } from "@/lib/auth";
 import { getCourse } from "@/lib/content/courses";
 import { pageMetadata } from "@/lib/seo";
 
@@ -27,6 +28,24 @@ export default async function CourseDetailPage({ params }: Props) {
   const { slug } = await params;
   const course = getCourse(slug);
   if (!course) notFound();
+
+  const supabase = await createServerSupabaseClient();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData?.user;
+
+  let alreadyApplied = false;
+  if (user) {
+    const { data: courseRow } = await supabase.from("courses").select("id").eq("slug", course.slug).maybeSingle();
+    if (courseRow) {
+      const { data: existing } = await supabase
+        .from("course_enrollments")
+        .select("id")
+        .or(`profile_id.eq.${user.id},email.eq.${user.email}`)
+        .eq("course_id", courseRow.id)
+        .limit(1);
+      alreadyApplied = Boolean(existing && existing.length > 0);
+    }
+  }
 
   return (
     <Container className="py-14">
@@ -98,7 +117,9 @@ export default async function CourseDetailPage({ params }: Props) {
       </section>
 
       <div className="mt-10">
-        <Button href={`/apply?program=course:${course.slug}`}>Apply / Enroll</Button>
+        <Button href={`/apply?program=course:${course.slug}`} disabled={alreadyApplied}>
+          {alreadyApplied ? "Applied" : "Apply / Enroll"}
+        </Button>
       </div>
     </Container>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
+import { createServerSupabaseClient } from "@/lib/auth";
 import { getProject, projects } from "@/lib/content/projects";
 import { pageMetadata } from "@/lib/seo";
 import dynamic from "next/dynamic";
@@ -28,6 +29,21 @@ export default async function ProjectDetailPage({ params }: Props) {
   const project = getProject(slug);
   if (!project) notFound();
 
+  const supabase = await createServerSupabaseClient();
+  const { data: authData } = await supabase.auth.getUser();
+  const user = authData?.user;
+
+  let alreadyApplied = false;
+  if (user) {
+    const { data: existing } = await supabase
+      .from("project_inquiries")
+      .select("id")
+      .or(`profile_id.eq.${user.id},email.eq.${user.email}`)
+      .eq("project_slug", project.slug)
+      .limit(1);
+    alreadyApplied = Boolean(existing && existing.length > 0);
+  }
+
   return (
     <Container className="py-14">
       <p className="text-sm text-ink-faint">
@@ -54,7 +70,10 @@ export default async function ProjectDetailPage({ params }: Props) {
       <div className="mt-10">
         <h3 className="font-serif text-xl">Interested in a guided project or certification?</h3>
         <p className="mt-2 text-sm text-ink-muted">If your college or you want help with project guidance, certification or handover, express interest and we will follow up.</p>
-        <ProjectInterestForm projectSlug={project.slug} />
+        <div className="mt-4">
+          <ProjectInterestForm projectSlug={project.slug} disabled={alreadyApplied} />
+          {alreadyApplied ? <p className="mt-3 text-sm font-medium text-teal-dark">You have already expressed interest in this project.</p> : null}
+        </div>
       </div>
     </Container>
   );
