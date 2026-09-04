@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabaseServer";
 export const dynamic = "force-dynamic";
-type Row = Record<string, any>;
+type Row = {
+  id: string | number;
+  profile_id?: string | null;
+  email?: string | null;
+  course_id?: string | null;
+  internship_id?: string | null;
+  program_id?: string | null;
+  [key: string]: unknown;
+};
 async function rowsForUser(table: string, userId: string, email: string) {
   const [p, e] = await Promise.all([
     supabaseAdmin.from(table).select("*").eq("profile_id", userId),
