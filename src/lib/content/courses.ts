@@ -7,9 +7,9 @@ const defaultFaqs: Course["faqs"] = [
       "Cohort timing is confirmed when a batch opens. The outline below is the intended curriculum, not a live timetable.",
   },
   {
-    question: "Are prices final?",
+    question: "How are fees shared?",
     answer:
-      "Prices on this site are placeholders (₹XX,XXX) until we publish a fee schedule. Confirm in writing before you pay anyone.",
+      "We keep pricing clear and simple by duration. Final fee details are shared before enrolment and confirmed in writing.",
   },
   {
     question: "Do you issue university credits?",
@@ -26,7 +26,7 @@ export const courses: Course[] = [
       "Learn Java from first principles with weekly assignments. Suitable for students who want a typed, object-oriented foundation before internships or backend work.",
     duration: "6 weeks",
     level: "Beginner",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Language basics", topics: ["Types", "Control flow", "Methods"] },
       { title: "Objects", topics: ["Classes", "Inheritance", "Interfaces"] },
@@ -47,7 +47,7 @@ export const courses: Course[] = [
       "An application-focused course: controllers, validation, and a simple data layer. Assumes Java basics from coursework or our Java Programming course.",
     duration: "6 weeks",
     level: "Intermediate",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Spring fundamentals", topics: ["DI", "Application structure"] },
       { title: "Web", topics: ["REST", "Validation", "Error responses"] },
@@ -68,7 +68,7 @@ export const courses: Course[] = [
       "You will assemble a small product: UI, API, and database. Frameworks may change as the industry does; the emphasis is on shipping a coherent system.",
     duration: "10 weeks",
     level: "Intermediate",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹599",
     modules: [
       { title: "Front end", topics: ["Layout", "State", "Forms"] },
       { title: "Back end", topics: ["Routes", "Auth concepts", "Validation"] },
@@ -88,7 +88,7 @@ export const courses: Course[] = [
     overview: "Idiomatic Python with an emphasis on structure, testing, and tooling rather than trivia.",
     duration: "6 weeks",
     level: "Beginner",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Core language", topics: ["Types", "Functions", "Modules"] },
       { title: "Tooling", topics: ["venv", "pytest", "formatters"] },
@@ -108,7 +108,7 @@ export const courses: Course[] = [
       "Practice cleaning, exploring, and presenting findings. Uses public or synthetic data. Not a hiring pipeline.",
     duration: "8 weeks",
     level: "Intermediate",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Wrangling", topics: ["pandas", "missing values"] },
       { title: "Exploration", topics: ["Charts", "summaries"] },
@@ -128,7 +128,7 @@ export const courses: Course[] = [
       "Learn vocabulary and architecture patterns. Hands-on work uses free-tier or local substitutes where possible. We do not require paid AWS spend for the outline of this course.",
     duration: "6 weeks",
     level: "Beginner",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Cloud models", topics: ["IaaS/PaaS/SaaS", "regions"] },
       { title: "Core services (conceptual)", topics: ["Compute", "storage", "IAM ideas"] },
@@ -148,7 +148,7 @@ export const courses: Course[] = [
       "A combined introduction to ML workflows and how modern AI tools fit (and do not fit) into student projects.",
     duration: "8 weeks",
     level: "Intermediate",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "ML pipeline", topics: ["Splits", "baselines", "metrics"] },
       { title: "Models", topics: ["Linear models", "trees"] },
@@ -168,7 +168,7 @@ export const courses: Course[] = [
       "Semantic HTML, CSS layout, and enough JavaScript/TypeScript to make forms and navigation work well on phones and desktops.",
     duration: "6 weeks",
     level: "Beginner",
-    price: "₹XX,XXX (placeholder)",
+    price: "₹499",
     modules: [
       { title: "Structure", topics: ["HTML", "landmarks", "forms"] },
       { title: "Presentation", topics: ["Flex/grid", "type", "colour"] },

@@ -6,7 +6,7 @@ export const site = {
   positioning: "Where Students Build. Where Businesses Grow.",
   description:
     "Practical technology training, internships and real-world projects for students — and digital solutions for startups and small businesses.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim()) ? process.env.NEXT_PUBLIC_SITE_URL : "http://localhost:3000",
   email: "bar-gainsandco@gmail.com",
   phone: "+91 892047773332",
   address: "Address to be confirmed",

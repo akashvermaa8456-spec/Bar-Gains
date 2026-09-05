@@ -3,15 +3,33 @@
  * Used by middleware and protected page components.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-export const createServerSupabaseClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+export const createServerSupabaseClient = async () => {
+  const cookieStore = await cookies();
+
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          for (const { name, value, options } of cookiesToSet) {
+            cookieStore.set(name, value, options);
+          }
+        } catch {
+          // Server Components cannot set cookies directly.
+        }
+      },
+    },
     auth: {
-      persistSession: false,
+      persistSession: true,
+      autoRefreshToken: true,
       detectSessionInUrl: false,
     },
   });
@@ -38,8 +56,17 @@ export interface AuthProfile {
  */
 export async function getCurrentUser() {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return null;
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error) {
+      return null;
+    }
+
     return user || null;
   } catch (e) {
     console.error("Error getting current user:", e);
@@ -52,7 +79,11 @@ export async function getCurrentUser() {
  */
 export async function getUserProfile(userId: string) {
   try {
-    const supabase = createServerSupabaseClient();
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return null;
+    }
+
+    const supabase = await createServerSupabaseClient();
     const { data } = await supabase
       .from("profiles")
       .select("*")

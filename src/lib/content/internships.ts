@@ -68,7 +68,7 @@ export const internships: Internship[] = [
       "Unit tests for business rules",
     ],
     project: "Build a documented Java service (for example, a catalogue or booking helper) with tests and a README.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "full-stack-development",
@@ -94,7 +94,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["UI slices", "API endpoints with validation", "Database migrations for a small schema"],
     project: "A full-stack sample product (for example, a program catalogue) marked as a learning project.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "python-development",
@@ -119,7 +119,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["CLI utilities", "API endpoints", "Test suites for parsing and validation"],
     project: "A Python API or automation tool with tests and usage notes.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "data-science",
@@ -144,7 +144,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["Cleaning pass on a public sample dataset", "EDA notebook", "Written findings"],
     project: "An analysis of a public sample dataset, clearly labelled as educational work.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "artificial-intelligence",
@@ -169,7 +169,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["Baseline classifier on a public dataset", "Error analysis write-up"],
     project: "A small, documented AI experiment with a public or synthetic dataset.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "machine-learning",
@@ -194,7 +194,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["Preprocessing pipeline", "Model comparison table"],
     project: "A supervised learning project on a public dataset, labelled as sample work.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "cloud-devops",
@@ -219,7 +219,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["Dockerfile for a sample API", "A documented deploy to a free host"],
     project: "A containerised demo service with a runbook.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "data-analytics",
@@ -243,7 +243,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["SQL worksheet", "Dashboard draft", "Insight memo"],
     project: "A sample analytics pack for a fictional business, marked as a demo.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "cybersecurity",
@@ -268,7 +268,7 @@ export const internships: Internship[] = [
     ],
     assignments: ["Threat-model worksheet for a sample app", "Hardening checklist"],
     project: "A written security review of a sample application (defence-focused).",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
   program({
     slug: "ui-ux-design",
@@ -293,10 +293,13 @@ export const internships: Internship[] = [
     ],
     assignments: ["Competitive notes (public products)", "Wireframe set", "Hi-fi screens"],
     project: "A sample product redesign case study, marked as a demo project.",
-    price: "₹XX,XXX (placeholder — confirm before enrolment)",
+    price: "Included with internship",
   }),
 ];
 
 export function getInternship(slug: string) {
   return internships.find((item) => item.slug === slug && item.published);
 }
+
+
+

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { getProject, projects } from "@/lib/content/projects";
 import { pageMetadata } from "@/lib/seo";
+import { ProjectApplicationAction } from "@/components/program/ProjectApplicationAction";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -48,6 +49,14 @@ export default async function ProjectDetailPage({ params }: Props) {
           <li key={item}>{item}</li>
         ))}
       </ul>
+
+      <div className="mt-10">
+        <h3 className="font-serif text-xl">Interested in a guided project or certification?</h3>
+        <p className="mt-2 text-sm text-ink-muted">If your college or you want help with project guidance, certification or handover, express interest and we will follow up.</p>
+        <div className="mt-4">
+          <ProjectApplicationAction projectSlug={project.slug} />
+        </div>
+      </div>
     </Container>
   );
 }

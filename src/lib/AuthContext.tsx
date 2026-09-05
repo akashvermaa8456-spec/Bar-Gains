@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import supabase from "@/lib/supabaseClient";
 
@@ -19,39 +19,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
+  const applySession = useCallback(async (sessionUser: User | null) => {
+    setUser(sessionUser);
+
+    if (!sessionUser) {
+      setProfile(null);
+      return;
+    }
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user || null);
-      
-      if (user) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
-        setProfile(profileData || null);
-      } else {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", sessionUser.id)
+        .maybeSingle();
+      setProfile(profileData || null);
+    } catch {
+      setProfile(null);
+    }
+  }, []);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        setUser(null);
         setProfile(null);
+        return;
       }
+
+      await applySession(session?.user ?? null);
     } catch (e) {
       console.error("Error fetching user:", e);
+      setUser(null);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [applySession]);
 
   useEffect(() => {
-    fetchUser();
+    void fetchUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [applySession, fetchUser]);
 
   return (
     <AuthContext.Provider value={{ user, loading, profile, refetch: fetchUser }}>

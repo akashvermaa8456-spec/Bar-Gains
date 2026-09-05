@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { Course } from "@/types/content";
+import { AuthAwarePrice } from "@/components/auth/AuthAwarePrice";
 
 export function CourseCard({ course }: { course: Course }) {
   return (
@@ -12,7 +15,7 @@ export function CourseCard({ course }: { course: Course }) {
       </div>
       <p className="mt-3 flex-1 text-sm leading-relaxed text-ink-muted">{course.shortDescription}</p>
       <p className="mt-4 text-sm text-ink">
-        {course.duration} · {course.price}
+        {course.duration} · <AuthAwarePrice value={course.price} redirectPath={`/courses/${course.slug}`} />
       </p>
       <Link
         href={`/courses/${course.slug}`}

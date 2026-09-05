@@ -92,7 +92,8 @@ export default function AdminPage() {
           <h1 className="font-serif text-3xl">Admin dashboard</h1>
           <p className="mt-2 text-sm text-ink-muted">Overview of activity.</p>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          <Button href="/admin/certificates" variant="accent">Certificates</Button>
           <Button variant="ghost" onClick={handleLogout}>Logout</Button>
         </div>
       </div>

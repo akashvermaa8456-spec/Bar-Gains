@@ -3,6 +3,8 @@ import { ProgramCard } from "@/components/cards/ProgramCard";
 import { Container } from "@/components/ui/Container";
 import { pageMetadata } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = pageMetadata({
   title: "Internships",
   description:

@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
-import { courses, getCourse } from "@/lib/content/courses";
+import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { getCourse } from "@/lib/content/courses";
 import { pageMetadata } from "@/lib/seo";
+import { ProgramApplyButton } from "@/components/program/ProgramApplyButton";
+
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return courses.map((item) => ({ slug: item.slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -41,8 +41,13 @@ export default async function CourseDetailPage({ params }: Props) {
       <div className="mt-8 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full bg-white px-3 py-1 ring-1 ring-ink/10">{course.duration}</span>
         <span className="rounded-full bg-white px-3 py-1 ring-1 ring-ink/10">{course.level}</span>
-        <span className="rounded-full bg-gold-light px-3 py-1">{course.price}</span>
+        <span className="rounded-full bg-gold-light px-3 py-1">
+          <AuthAwarePrice value={course.price} redirectPath={`/courses/${course.slug}`} />
+        </span>
       </div>
+      <AuthAwarePriceGuide>
+        <p className="mt-2 text-xs text-ink-muted">Pricing guide: 6–8 weeks — ₹499; 10+ weeks — ₹599 (certificate/fee options)</p>
+      </AuthAwarePriceGuide>
 
       <section className="mt-12">
         <h2 className="font-serif text-2xl">Curriculum &amp; modules</h2>
@@ -93,7 +98,7 @@ export default async function CourseDetailPage({ params }: Props) {
       </section>
 
       <div className="mt-10">
-        <Button href={`/apply?program=course:${course.slug}`}>Apply / Enroll</Button>
+        <ProgramApplyButton type="course" slug={course.slug} />
       </div>
     </Container>
   );

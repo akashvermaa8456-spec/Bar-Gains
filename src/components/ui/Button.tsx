@@ -20,6 +20,22 @@ export function Button({ variant = "primary", href, className = "", children, ..
   const classes = `inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium tracking-wide transition ${variants[variant]} ${className}`;
 
   if (href) {
+    // A disabled action must be a real disabled button, not a link/span.
+    // This prevents keyboard/mouse activation and gives assistive technology
+    // an accurate disabled state.
+    if (props.disabled) {
+      return (
+        <button
+          type="button"
+          disabled
+          aria-disabled="true"
+          className={`${classes} cursor-not-allowed opacity-60 disabled:pointer-events-none`}
+        >
+          {children}
+        </button>
+      );
+    }
+
     return (
       <Link href={href} className={classes}>
         {children}

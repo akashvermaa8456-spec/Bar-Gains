@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import supabase from "@/lib/supabaseServer";
 
 const ADMIN_HEADER = "x-admin-key";
 
@@ -10,55 +9,57 @@ function checkAdminAuth(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json({ error: "Server misconfigured: SUPABASE_SERVICE_ROLE_KEY missing" }, { status: 500 });
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "This development-only user confirmation helper is disabled in production." },
+      { status: 403 }
+    );
+  }
+
+  if (!process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: "Server misconfigured: ADMIN_API_KEY missing" }, { status: 500 });
   }
 
   if (!checkAdminAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  return NextResponse.json(
+    { error: "Dev-only confirmation helper is disabled. Use the normal Supabase auth flow in production." },
+    { status: 410 }
+  );
+}
+
+// Development-only helper: GET /api/dev/confirm-user?email=...
+// Protected by x-admin-key header (ADMIN_API_KEY).
+import { createClient } from "@supabase/supabase-js";
+
+export async function GET(req: Request) {
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Disabled in production" }, { status: 403 });
+  }
+
+  if (!process.env.ADMIN_API_KEY) return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  if (!checkAdminAuth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const url = new URL(req.url);
+  const email = url.searchParams.get("email");
+  const profile_id = url.searchParams.get("profile_id");
+
+  if (!email && !profile_id) return NextResponse.json({ error: "Provide email or profile_id" }, { status: 400 });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const body = await req.json();
-    const email = (body?.email || "").toString().trim();
-    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    let q = supabase.from("course_enrollments").select("*, course:course_id(id, title, slug)");
+    if (profile_id) q = q.eq("profile_id", profile_id);
+    else q = q.eq("email", email!);
 
-    // Find user in auth.users
-    const { data: users, error: selectError } = await supabase.from("auth.users").select("id, email").eq("email", email).limit(1);
-    if (selectError) {
-      console.error("selectError", selectError);
-      return NextResponse.json({ error: "Failed to query auth.users" }, { status: 500 });
-    }
-
-    const user = Array.isArray(users) ? users[0] : users;
-    if (!user || !user.id) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    const confirmedAt = new Date().toISOString();
-
-    // Try admin API first (if available), otherwise update auth.users directly
-    try {
-      // @ts-ignore - supabase-js may expose auth.admin on the server client
-      if (supabase.auth && (supabase as any).auth.admin && (supabase as any).auth.admin.updateUserById) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        const res = await (supabase as any).auth.admin.updateUserById(user.id, { email_confirmed_at: confirmedAt });
-        if (res?.error) {
-          console.warn("admin.updateUserById error", res.error);
-        } else {
-          return NextResponse.json({ ok: true });
-        }
-      }
-    } catch (e) {
-      console.warn("admin.updateUserById threw", e);
-    }
-
-    // Fallback: direct update of auth.users table using service role key
-    const { error: updateError } = await supabase.from("auth.users").update({ email_confirmed_at: confirmedAt }).eq("id", user.id);
-    if (updateError) {
-      console.error("updateError", updateError);
-      return NextResponse.json({ error: "Failed to update user confirmation" }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true });
+    const { data, error } = await q;
+    if (error) return NextResponse.json({ error }, { status: 500 });
+    return NextResponse.json({ data });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("dev confirm-user GET error:", err);
+    return NextResponse.json({ error: "server error" }, { status: 500 });
   }
 }

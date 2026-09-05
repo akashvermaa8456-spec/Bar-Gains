@@ -3,31 +3,28 @@ import supabase from "@/lib/supabaseServer";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { full_name, email, phone, college, degree, branch, year, program, message } = body;
+    const body = (await req.json()) as Record<string, unknown>;
+    const { full_name, email, phone, college, degree, branch, year, program, message, profile_id } = body;
     if (!full_name || !email || !college || !degree || !branch || !year || !program) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Resolve program slug -> id if a slug or prefixed value was sent
-    let program_id = null;
+    let program_id: string | null = null;
     try {
-      // Accept formats: "slug", "course:slug", "internship:slug", or a UUID id.
-      let slugOrId = program;
+      let slugOrId: string | unknown = program;
       if (typeof program === "string") {
         const m = program.match(/^[a-z]+:(.+)$/i);
         if (m) slugOrId = m[1];
       }
 
-      // If it looks like a UUID, treat it as an id directly
       const isUuid = typeof slugOrId === "string" && /^[0-9a-fA-F\-]{36}$/.test(slugOrId);
-      if (isUuid) {
+      if (isUuid && typeof slugOrId === "string") {
         program_id = slugOrId;
       } else {
         const { data: programRow, error: pErr } = await supabase
           .from("internships")
           .select("id")
-          .eq("slug", slugOrId)
+          .eq("slug", String(slugOrId))
           .limit(1)
           .maybeSingle();
         if (pErr) {
@@ -36,19 +33,20 @@ export async function POST(req: Request) {
           program_id = programRow.id;
         }
       }
-    } catch (e) {
+    } catch {
       // ignore lookup errors
     }
 
-    const insertObj: any = {
-      full_name,
-      email,
-      phone,
-      college,
-      degree,
-      branch,
-      year,
-      message,
+    const insertObj: Record<string, string | null> = {
+      profile_id: profile_id ? String(profile_id) : null,
+      full_name: String(full_name),
+      email: String(email),
+      phone: phone ? String(phone) : null,
+      college: String(college),
+      degree: String(degree),
+      branch: String(branch),
+      year: String(year),
+      message: message ? String(message) : "",
       status: "NEW",
     };
     if (program_id) insertObj.program_id = program_id;

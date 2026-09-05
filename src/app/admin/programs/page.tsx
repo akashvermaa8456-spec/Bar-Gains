@@ -1,17 +1,22 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 
+type Program = {
+  id?: string;
+  title?: string;
+  slug?: string;
+  short_description?: string;
+};
+
 export default function ProgramsAdminPage() {
-  const [programs, setPrograms] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Program | null>(null);
   const [form, setForm] = useState({ title: "", slug: "", short_description: "" });
-
-  const adminKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY ?? "";
 
   useEffect(() => {
     let mounted = true;
@@ -19,11 +24,13 @@ export default function ProgramsAdminPage() {
       setLoading(true);
       const res = await fetch("/api/admin/internships");
       const json = await res.json();
-      if (mounted) setPrograms(json.data ?? []);
+      if (mounted) setPrograms((json.data ?? []) as Program[]);
       setLoading(false);
     }
     load();
-    return () => (mounted = false);
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   function openCreate() {
@@ -32,32 +39,31 @@ export default function ProgramsAdminPage() {
     setFormOpen(true);
   }
 
-  function openEdit(p: any) {
+  function openEdit(p: Program) {
     setEditing(p);
     setForm({ title: p.title || "", slug: p.slug || "", short_description: p.short_description || "" });
     setFormOpen(true);
   }
 
-  async function submitForm(e: any) {
+  async function submitForm(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const payload = { ...form } as any;
+    const payload: Record<string, string> = { ...form };
     try {
       const res = await fetch(editing ? `/api/admin/internships/${editing.id}` : "/api/admin/internships", {
         method: editing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (json.ok) {
-        // reload
         const r2 = await fetch("/api/admin/internships");
         const j2 = await r2.json();
-        setPrograms(j2.data ?? []);
+        setPrograms((j2.data ?? []) as Program[]);
         setFormOpen(false);
       } else {
         alert(json.error || "Error");
       }
-    } catch (err) {
+    } catch {
       alert("Server error");
     }
   }
@@ -65,16 +71,16 @@ export default function ProgramsAdminPage() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this program?")) return;
     try {
-      const res = await fetch(`/api/admin/internships/${id}`, { method: "DELETE", headers: { "x-admin-key": adminKey } });
+      const res = await fetch(`/api/admin/internships/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (json.ok) setPrograms((p) => p.filter((x) => x.id !== id));
       else alert(json.error || "Error");
-    } catch (err) {
+    } catch {
       alert("Server error");
     }
   }
 
-  if (loading) return <Container className="py-20">Loading…</Container>;
+  if (loading) return <Container className="py-20">Loadingâ€¦</Container>;
 
   return (
     <Container className="py-14">
@@ -97,7 +103,7 @@ export default function ProgramsAdminPage() {
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => openEdit(p)}>Edit</Button>
-              <Button variant="ghost" onClick={() => handleDelete(p.id)}>Delete</Button>
+              <Button variant="ghost" onClick={() => handleDelete(p.id ?? "")}>Delete</Button>
             </div>
           </div>
         ))}
@@ -131,3 +137,4 @@ export default function ProgramsAdminPage() {
     </Container>
   );
 }
+

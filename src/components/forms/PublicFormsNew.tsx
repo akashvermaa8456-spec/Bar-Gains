@@ -1,25 +1,27 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { FormInput, FormSelect, FormTextarea } from "@/components/forms/FormFields";
 import { PersistenceNotice } from "@/components/forms/PersistenceNotice";
+import { SuccessPopup } from "@/components/ui/SuccessPopup";
 import { programOptions } from "@/lib/seo";
-import { useRouter } from "next/navigation";
+import { courses } from "@/lib/content/courses";
+import { useRouter, useSearchParams } from "next/navigation";
 import supabase from "@/lib/supabaseClient";
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRe = /^[0-9+\-\s()]{8,20}$/;
 
 type Errors = Record<string, string>;
+type JsonBody = Record<string, unknown>;
 
-async function postJson(path: string, body: any) {
-  const res = await fetch(path, {
+async function postJson(path: string, body: JsonBody) {
+  return fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return res;
 }
 
 export function ContactForm() {
@@ -55,7 +57,7 @@ export function ContactForm() {
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
-    } catch (e) {
+    } catch {
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
@@ -115,7 +117,7 @@ export function CollegePartnerForm() {
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
-    } catch (e) {
+    } catch {
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
@@ -130,15 +132,7 @@ export function CollegePartnerForm() {
       <FormInput id="c-designation" name="designation" label="Designation" required error={errors.designation} />
       <FormInput id="c-email" name="email" type="email" label="Email" required error={errors.email} />
       <FormInput id="c-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
-      <FormInput
-        id="c-students"
-        name="students"
-        type="number"
-        min={1}
-        label="Number of Students"
-        required
-        error={errors.students}
-      />
+      <FormInput id="c-students" name="students" type="number" min={1} label="Number of Students" required error={errors.students} />
       <FormSelect id="c-requirement" name="requirement" label="Requirement" required error={errors.requirement} defaultValue="">
         <option value="" disabled>
           Select
@@ -199,7 +193,7 @@ export function BusinessEnquiryForm() {
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
-    } catch (e) {
+    } catch {
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
@@ -255,6 +249,8 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const router = useRouter();
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -284,14 +280,44 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
 
     setLoading(true);
     try {
-      const res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg });
-      if (res.ok) {
+      const { data: authData } = await supabase.auth.getUser();
+      const profileId = authData?.user?.id ?? null;
+      const m = program.match(/^([a-z]+):(.+)$/i);
+      let res;
+      if (m && m[1].toLowerCase() === "course") {
+        const courseSlug = m[2];
+        res = await postJson("/api/course-enrollments", { full_name, email, phone, college, degree, branch, year, course: courseSlug, message: msg, profile_id: profileId });
+      } else if (m && m[1].toLowerCase() === "project") {
+        const projectSlug = m[2];
+        res = await postJson("/api/project-inquiries", { full_name, email, phone, college, degree, branch, year, project: projectSlug, message: msg, profile_id: profileId });
+      } else if (m && m[1].toLowerCase() === "internship") {
+        const internshipSlug = m[2];
+        res = await postJson("/api/internship-applications", { full_name, email, phone, college, degree, branch, year, internship: internshipSlug, message: msg, profile_id: profileId });
+      } else {
+        res = await postJson("/api/student-applications", { full_name, email, phone, college, degree, branch, year, program, message: msg, profile_id: profileId });
+      }
+
+      if (res && res.ok) {
+        const targetKey = (() => {
+          if (m && m[1].toLowerCase() === "course") return `applied:course:${m[2]}`;
+          if (m && m[1].toLowerCase() === "project") return `applied:project:${m[2]}`;
+          if (m && m[1].toLowerCase() === "internship") return `applied:internship:${m[2]}`;
+          return `applied:program:${program}`;
+        })();
+
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(targetKey, "1");
+        }
+
         setMessage("Thanks — your application was submitted.");
+        setSuccessOpen(true);
         (event.target as HTMLFormElement).reset();
+        setTimeout(() => router.push("/dashboard"), 1500);
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
     } catch (e) {
+      console.error(e);
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
@@ -299,46 +325,47 @@ export function StudentApplicationForm({ defaultProgram }: { defaultProgram?: st
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <PersistenceNotice />
-      <FormInput id="s-name" name="full_name" label="Full Name" required error={errors.full_name} />
-      <FormInput id="s-email" name="email" type="email" label="Email" required error={errors.email} />
-      <FormInput id="s-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
-      <FormInput id="s-college" name="college" label="College" required error={errors.college} />
-      <FormInput id="s-degree" name="degree" label="Degree" required error={errors.degree} />
-      <FormInput id="s-branch" name="branch" label="Branch" required error={errors.branch} />
-      <FormSelect id="s-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
-        <option value="" disabled>
-          Select
-        </option>
-        <option>1st year</option>
-        <option>2nd year</option>
-        <option>3rd year</option>
-        <option>4th year</option>
-        <option>Postgraduate</option>
-        <option>Other</option>
-      </FormSelect>
-      <FormSelect
-        id="s-program"
-        name="program"
-        label="Program"
-        required
-        defaultValue={defaultProgram ?? ""}
-        error={errors.program}
-      >
-        <option value="" disabled>
-          Select
-        </option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+    <>
+      <SuccessPopup
+        open={successOpen}
+        title="Application submitted"
+        description="Thanks — your request was recorded successfully. We will get back to you soon with the next steps."
+        onClose={() => setSuccessOpen(false)}
+      />
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <PersistenceNotice />
+        <FormInput id="s-name" name="full_name" label="Full Name" required error={errors.full_name} />
+        <FormInput id="s-email" name="email" type="email" label="Email" required error={errors.email} />
+        <FormInput id="s-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
+        <FormInput id="s-college" name="college" label="College" required error={errors.college} />
+        <FormInput id="s-degree" name="degree" label="Degree" required error={errors.degree} />
+        <FormInput id="s-branch" name="branch" label="Branch" required error={errors.branch} />
+        <FormSelect id="s-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
+          <option value="" disabled>
+            Select
           </option>
-        ))}
-      </FormSelect>
-      <FormTextarea id="s-message" name="message" label="Message" />
-      {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
-      <Button type="submit" disabled={loading}>{loading ? "Sending…" : "Apply Now"}</Button>
-    </form>
+          <option>1st year</option>
+          <option>2nd year</option>
+          <option>3rd year</option>
+          <option>4th year</option>
+          <option>Postgraduate</option>
+          <option>Other</option>
+        </FormSelect>
+        <FormSelect id="s-program" name="program" label="Program" required defaultValue={defaultProgram ?? ""} error={errors.program}>
+          <option value="" disabled>
+            Select
+          </option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </FormSelect>
+        <FormTextarea id="s-message" name="message" label="Message" />
+        {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
+        <Button type="submit" disabled={loading}>{loading ? "Sending…" : "Apply Now"}</Button>
+      </form>
+    </>
   );
 }
 
@@ -346,7 +373,16 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const router = useRouter();
+  const options = useMemo(
+    () =>
+      courses.map((course) => ({
+        value: course.slug,
+        label: course.title,
+      })),
+    [],
+  );
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -377,7 +413,7 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
     setLoading(true);
     try {
       const { data: authData } = await supabase.auth.getUser();
-      const profileId = authData?.user?.id || null;
+      const profileId = authData?.user?.id ?? null;
 
       const res = await postJson("/api/course-enrollments", {
         full_name,
@@ -394,6 +430,7 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
 
       if (res.ok) {
         setMessage("Thanks — you are enrolled! Check your email for confirmation.");
+        setSuccessOpen(true);
         (event.target as HTMLFormElement).reset();
         if (profileId) {
           setTimeout(() => router.push("/dashboard"), 2000);
@@ -401,62 +438,55 @@ export function CourseEnrollmentForm({ defaultCourse }: { defaultCourse?: string
       } else {
         setMessage("Sorry — an error occurred. Please try again later.");
       }
-    } catch (e) {
+    } catch {
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
     }
   }
 
-  const options = useMemo(() => {
-    const courseList = require("@/lib/content/courses").courses;
-    return courseList.map((course: any) => ({
-      value: course.slug,
-      label: course.title,
-    }));
-  }, []);
-
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <PersistenceNotice />
-      <FormInput id="c-name" name="full_name" label="Full Name" required error={errors.full_name} />
-      <FormInput id="c-email" name="email" type="email" label="Email" required error={errors.email} />
-      <FormInput id="c-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
-      <FormInput id="c-college" name="college" label="College" required error={errors.college} />
-      <FormInput id="c-degree" name="degree" label="Degree" required error={errors.degree} />
-      <FormInput id="c-branch" name="branch" label="Branch" required error={errors.branch} />
-      <FormSelect id="c-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
-        <option value="" disabled>
-          Select
-        </option>
-        <option>1st year</option>
-        <option>2nd year</option>
-        <option>3rd year</option>
-        <option>4th year</option>
-        <option>Postgraduate</option>
-        <option>Other</option>
-      </FormSelect>
-      <FormSelect
-        id="c-course"
-        name="course"
-        label="Course"
-        required
-        defaultValue={defaultCourse ?? ""}
-        error={errors.course}
-      >
-        <option value="" disabled>
-          Select
-        </option>
-        {options.map((option: any) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
+    <>
+      <SuccessPopup
+        open={successOpen}
+        title="Enrollment submitted"
+        description="Thanks — your course request was recorded successfully. We will get back to you soon with the details."
+        onClose={() => setSuccessOpen(false)}
+      />
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <PersistenceNotice />
+        <FormInput id="c-name" name="full_name" label="Full Name" required error={errors.full_name} />
+        <FormInput id="c-email" name="email" type="email" label="Email" required error={errors.email} />
+        <FormInput id="c-phone" name="phone" type="tel" label="Phone" required error={errors.phone} />
+        <FormInput id="c-college" name="college" label="College" required error={errors.college} />
+        <FormInput id="c-degree" name="degree" label="Degree" required error={errors.degree} />
+        <FormInput id="c-branch" name="branch" label="Branch" required error={errors.branch} />
+        <FormSelect id="c-year" name="year" label="Year of Study" required defaultValue="" error={errors.year}>
+          <option value="" disabled>
+            Select
           </option>
-        ))}
-      </FormSelect>
-      <FormTextarea id="c-message" name="message" label="Message (optional)" />
-      {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
-      <Button type="submit" disabled={loading}>{loading ? "Enrolling…" : "Enroll Now"}</Button>
-    </form>
+          <option>1st year</option>
+          <option>2nd year</option>
+          <option>3rd year</option>
+          <option>4th year</option>
+          <option>Postgraduate</option>
+          <option>Other</option>
+        </FormSelect>
+        <FormSelect id="c-course" name="course" label="Course" required defaultValue={defaultCourse ?? ""} error={errors.course}>
+          <option value="" disabled>
+            Select
+          </option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </FormSelect>
+        <FormTextarea id="c-message" name="message" label="Message (optional)" />
+        {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
+        <Button type="submit" disabled={loading}>{loading ? "Enrolling…" : "Enroll Now"}</Button>
+      </form>
+    </>
   );
 }
 
@@ -465,6 +495,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams?.get("next") ?? null;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -483,92 +515,50 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
         next.password = "Include at least one uppercase letter and one number.";
       }
     }
-    if (mode === "register") {
-      if (password !== confirm) next.confirm = "Passwords do not match.";
+    if (mode === "register" && password !== confirm) {
+      next.confirm = "Passwords do not match.";
     }
+
     setErrors(next);
     if (Object.keys(next).length) return;
 
     setLoading(true);
     try {
       if (mode === "register") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data: signUpData, error } = await supabase.auth.signUp({ email, password });
         if (error) {
           setMessage(error.message || "Registration failed.");
         } else {
-          const user = (data as any)?.user;
-          if (user && user.id) {
+          const user = signUpData?.user;
+          if (user?.id) {
             await supabase.from("profiles").upsert([{ id: user.id, full_name: name, email }]);
-          }
-
-          // Dev convenience: if NEXT_PUBLIC_ADMIN_API_KEY is present, auto-confirm the user via the server endpoint and sign them in immediately.
-          if (process.env.NEXT_PUBLIC_ADMIN_API_KEY) {
-            try {
-              await fetch("/api/dev/confirm-user", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY,
-                },
-                body: JSON.stringify({ email }),
-              });
-              // Try signing in immediately
-              const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-              if (!signInErr) {
-                router.push("/dashboard");
-                return;
-              } else {
-                console.warn("Sign-in after auto-confirm failed", signInErr);
-              }
-            } catch (e) {
-              console.warn("Auto-confirm/register flow failed", e);
-            }
           }
 
           setMessage("Check your email for confirmation (if required). You can now log in.");
           router.push("/login");
         }
       } else if (mode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          // If error suggests email is unconfirmed, attempt dev-only auto-confirm
           const errMsg = (error.message || "").toString();
           const looksLikeUnconfirmed = /confirm|confirmed|verify|verification|required.*confirmation|not verified|email.*confirm/i.test(errMsg);
 
-          if (looksLikeUnconfirmed && process.env.NEXT_PUBLIC_ADMIN_API_KEY) {
-            try {
-              const resp = await fetch("/api/dev/confirm-user", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-admin-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY,
-                },
-                body: JSON.stringify({ email }),
-              });
-              const jr = await resp.json().catch(() => ({}));
-              if (resp.ok && (jr.ok || jr.success)) {
-                // retry sign-in once
-                const { data: retryData, error: retryErr } = await supabase.auth.signInWithPassword({ email, password });
-                if (!retryErr) {
-                  router.push("/dashboard");
-                  return;
-                }
-                console.warn("Retry sign-in failed after auto-confirm", retryErr);
-              } else {
-                console.warn("Auto-confirm endpoint did not succeed", jr);
-              }
-            } catch (e) {
-              console.warn("Auto-confirm attempt failed", e);
-            }
+          if (looksLikeUnconfirmed) {
+            setMessage("Please verify your email before logging in, or use the reset flow if needed.");
+          } else {
+            setMessage(error.message || "Login failed.");
           }
-
-          setMessage(error.message || "Login failed.");
         } else {
-          setMessage("Logged in — redirecting to dashboard.");
-          router.push("/dashboard");
+          setMessage("Logged in — redirecting…");
+          const dest = nextParam ? decodeURIComponent(nextParam) : "/dashboard";
+          router.push(dest);
+          router.refresh();
+          if (signInData?.user) {
+            console.info("Signed in user", signInData.user.email);
+          }
         }
       } else {
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/reset-password`,
         });
         if (error) {
@@ -577,8 +567,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
           setMessage("If an account exists, a password reset link was sent to your email.");
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
       setMessage("Server error — try again later.");
     } finally {
       setLoading(false);
@@ -590,21 +579,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" | "forgot" }) {
       {mode === "register" ? <FormInput id="a-name" name="name" label="Name" required error={errors.name} /> : null}
       <FormInput id="a-email" name="email" type="email" label="Email" required error={errors.email} />
       {mode !== "forgot" ? (
-        <FormInput
-          id="a-password"
-          name="password"
-          type="password"
-          label="Password"
-          required
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          error={errors.password}
-        />
+        <FormInput id="a-password" name="password" type="password" label="Password" required autoComplete={mode === "login" ? "current-password" : "new-password"} error={errors.password} />
       ) : null}
-      {mode === "register" ? (
-        <FormInput id="a-confirm" name="confirm" type="password" label="Confirm Password" required autoComplete="new-password" error={errors.confirm} />
-      ) : null}
+      {mode === "register" ? <FormInput id="a-confirm" name="confirm" type="password" label="Confirm Password" required autoComplete="new-password" error={errors.confirm} /> : null}
       {message ? <p className="text-sm text-teal-dark">{message}</p> : null}
       <Button type="submit" disabled={loading}>{loading ? (mode === "login" ? "Logging in…" : mode === "register" ? "Creating…" : "Sending…") : (mode === "login" ? "Log in" : mode === "register" ? "Create account" : "Send reset link")}</Button>
     </form>
   );
 }
+

@@ -7,7 +7,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Business Solutions",
   description:
-    "Websites and digital solutions for startups and small businesses. Placeholder pricing until we quote your scope.",
+    "Websites and digital solutions for startups and small businesses. We scope work after a short discovery conversation.",
   path: "/business-solutions",
 });
 
@@ -20,7 +20,7 @@ export default function BusinessSolutionsPage() {
       </h1>
       <p className="mt-4 max-w-2xl text-lg text-ink-muted">
         Technology solutions for startups, small businesses, local businesses, new companies, and entrepreneurs. We
-        confirm scope in writing. Prices below are placeholders and can change.
+        confirm scope in writing and will discuss budget after understanding your needs.
       </p>
 
       <h2 className="mt-14 font-serif text-2xl">Services</h2>
@@ -33,9 +33,10 @@ export default function BusinessSolutionsPage() {
         ))}
       </div>
 
-      <h2 className="mt-16 font-serif text-2xl">Indicative packages</h2>
+      <h2 className="mt-16 font-serif text-2xl">Package options</h2>
       <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-        Figures shown as ₹XX,XXX are not a rate card. Replace them when you have real numbers. Custom work is quoted.
+        We do not publish fixed prices here. Share your goals and we will suggest the best approach and discuss pricing
+        after a short conversation.
       </p>
       <div className="mt-8 grid gap-5 lg:grid-cols-3">
         {pricingTiers.map((tier) => (
@@ -49,7 +50,7 @@ export default function BusinessSolutionsPage() {
               <p className="text-xs font-semibold uppercase tracking-wider text-teal">Often a starting conversation</p>
             ) : null}
             <h3 className="mt-2 font-serif text-2xl">{tier.name}</h3>
-            <p className="mt-3 font-serif text-3xl text-ink">{tier.price}</p>
+            <p className="mt-3 text-sm leading-relaxed text-ink-muted">{tier.description}</p>
             <p className="mt-2 text-xs text-ink-faint">{tier.note}</p>
             <ul className="mt-5 flex-1 space-y-2 text-sm text-ink-muted">
               {tier.points.map((point) => (

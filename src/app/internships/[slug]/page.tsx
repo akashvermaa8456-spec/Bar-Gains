@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { FaqList } from "@/components/ui/FaqList";
-import { internships, getInternship } from "@/lib/content/internships";
+import { AuthAwarePrice, AuthAwarePriceGuide } from "@/components/auth/AuthAwarePrice";
+import { getInternship } from "@/lib/content/internships";
 import { pageMetadata } from "@/lib/seo";
+import { ProgramApplyButton } from "@/components/program/ProgramApplyButton";
+
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export function generateStaticParams() {
-  return internships.map((item) => ({ slug: item.slug }));
-}
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
@@ -27,6 +27,13 @@ export default async function InternshipDetailPage({ params }: Props) {
   const { slug } = await params;
   const program = getInternship(slug);
   if (!program) notFound();
+
+  const certificateLabel = (() => {
+    if (/8 weeks/i.test(program.duration)) return "Certificate option: 8 weeks — ₹299";
+    if (/10 weeks/i.test(program.duration)) return "Certificate option: 10 weeks — ₹399";
+    if (/12 weeks/i.test(program.duration)) return "Certificate option: 12 weeks — ₹599";
+    return "Certificate options are available after successful completion and interview clearance.";
+  })();
 
   return (
     <Container className="py-14">
@@ -75,6 +82,9 @@ export default async function InternshipDetailPage({ params }: Props) {
           <section className="mt-10">
             <h2 className="font-serif text-2xl">Certificate</h2>
             <p className="mt-3 text-sm leading-relaxed text-ink-muted">{program.certificate}</p>
+            <AuthAwarePriceGuide>
+              <p className="mt-2 text-xs text-ink-muted">{certificateLabel}</p>
+            </AuthAwarePriceGuide>
           </section>
           <section className="mt-10">
             <h2 className="mb-4 font-serif text-2xl">FAQ</h2>
@@ -101,12 +111,12 @@ export default async function InternshipDetailPage({ params }: Props) {
             </div>
             <div>
               <dt className="text-ink-faint">Price</dt>
-              <dd className="font-medium">{program.price}</dd>
+              <dd className="font-medium">
+                <AuthAwarePrice value={program.price} redirectPath={`/internships/${program.slug}`} />
+              </dd>
             </div>
           </dl>
-          <Button href={`/apply?program=internship:${program.slug}`} className="mt-6 w-full">
-            Apply Now
-          </Button>
+          <ProgramApplyButton type="internship" slug={program.slug} />
         </aside>
       </div>
     </Container>
